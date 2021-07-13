@@ -17,7 +17,7 @@ colnames(summaryMatrix) <- c('size', 'firstDate', 'lastDate', 'detectionLag', 'l
 
 for(i in 1:length(clades)){
     dates <- as.numeric(gsub('.+_', '', clades[[i]]))
-    detLag <- max(dates) - nodeDates[names(nodeDates) == get.mrca(tr, clades[[i]])]
+    detLag <- min(dates) - nodeDates[names(nodeDates) == get.mrca(tr, clades[[i]])]
                                         # Get lineage count and ids
     lineages <- table(gsub('_.+', '', clades[[i]]))
     lineages <- paste(names(lineages), lineages, sep = '=', collapse = ';')
