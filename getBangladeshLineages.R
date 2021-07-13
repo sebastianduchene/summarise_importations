@@ -29,3 +29,12 @@ for(i in 1:length(clades)){
 head(summaryMatrix)
 
 write.table(summaryMatrix, file = 'bangladeshImportationSummary.csv', sep = ',', row.names = F)
+
+# Export the top 5 largest clades
+aln <- read.dna('nextStrainBangladeshAligned.fasta', format = 'fasta')
+
+top5 <- order(cladesSize, decreasing = T)
+for(i in 1:5){
+    write.dna(aln[rownames(aln) %in% clades[[ top5[i] ]], ], file = paste0('top_', i, '_clade.fasta'),
+              format = 'fasta', nbcol = -1, colsep = '')
+}
