@@ -1,5 +1,75 @@
-library(NELSI)
 
+library(NELSI)
+library(geiger)
+
+get.mrca <- function (phy, tip) 
+{
+    if (!inherits(phy, "phylo")) 
+        stop("object \"phy\" is not of class \"phylo\"")
+    if (length(tip) < 2){
+        tnd <- if (is.character(tip)) 
+                   match(tip, phy$tip.label)
+               else tip
+        return(phy$edge[phy$edge[, 2] == tnd, 1])
+    }
+    Ntip <- length(phy$tip.label)
+    rootnd <- Ntip + 1L
+    pars <- integer(phy$Nnode)
+    tnd <- if (is.character(tip)) 
+        match(tip, phy$tip.label)
+    else tip
+    done_v <- logical(Ntip + phy$Nnode)
+    pvec <- integer(Ntip + phy$Nnode)
+    pvec[phy$edge[, 2]] <- phy$edge[, 1]
+    nd <- tnd[1]
+    for (k in 1:phy$Nnode) {
+        nd <- pvec[nd]
+        pars[k] <- nd
+        if (nd == rootnd) 
+            break
+    }
+    pars <- pars[1:k]
+    mrcind <- integer(max(pars))
+    mrcind[pars] <- 1:k
+    mrcand <- pars[1]
+    for (i in 2:length(tnd)) {
+        cnd <- tnd[i]
+        done <- done_v[cnd]
+        while (!done) {
+            done_v[cnd] <- TRUE
+            cpar <- pvec[cnd]
+            done <- done_v[cpar]
+            if (cpar %in% pars) {
+                if (cpar == rootnd) 
+                  return(rootnd)
+                if (mrcind[cpar] > mrcind[mrcand]) 
+                  mrcand <- cpar
+                done_v[cpar] <- TRUE
+                done <- TRUE
+            }
+            cnd <- cpar
+        }
+    }
+    mrcand
+}
+
+
+get.descendants.of.node <-
+function(phy, node, tips=FALSE){
+	n=Ntip(phy)
+	all=ifelse(tips, FALSE, TRUE)
+	out <- .Call("get_descendants", tree=list(
+    NODE = as.integer(node),
+    ROOT = as.integer(n+1),
+    ALL = as.integer(all),
+    ENDOFCLADE = as.integer(dim(phy$edge)[1]),
+    ANC = as.integer(phy$edge[,1]),
+    DES = as.integer(phy$edge[,2])),
+    PACKAGE = "geiger")
+	res=out$TIPS
+	if(!length(res)) res=NULL
+	return(c(node, res))
+}
 
 find.sister <- function(tr, clade){
     if(!is.monophyletic(tr, clade)) stop('group is not monophyletic')
@@ -19,6 +89,7 @@ is.polytomy <- function(tr, node){
 }
 
 find.monophyletic <- function(tr, tag, include.singletons = F){
+    require(geiger)
 #include.singletons = F
 #tr <- read.tree(text = '(((a, b_uno, c_uno), (d, e, (f, g))), h);')
 #tr <- read.tree(text = '((((a, i_uno), b_uno, c_uno), (d, e, (f, g))), h);')
@@ -34,8 +105,10 @@ find.monophyletic <- function(tr, tag, include.singletons = F){
     clades <- list()
     i <- 1
     while(i <= length(intnodes)){
-        descending_nodes <- get.descending.nodes.branches(tr, intnodes[i])$descending.nodes
+#        descending_nodes <- get.descending.nodes.branches(tr, intnodes[i])$descending.nodes
+        descending_nodes <- get.descendants.of.node(tr, intnodes[i])
         descending_tips <- tr$tip.label[descending_nodes[descending_nodes %in% tips]]
+##        descending_tips <- tips(tr, intnodes[i])
         num_matches <- grep(tag, descending_tips)
         num_internal_nodes <- length(descending_nodes) - length(descending_tips)
         if(length(num_matches) == 0){
@@ -138,3 +211,8 @@ get.clades <- function(tr, threshold){
     names(list_taxa) <- contained
     return(list_taxa)
 }
+
+
+
+
+
