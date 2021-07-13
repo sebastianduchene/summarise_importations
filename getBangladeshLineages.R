@@ -12,15 +12,20 @@ range(nodeDates)
 cladesSize <- sapply(clades, function(x) length(x))
 sort(cladesSize, decreasing = T)
 
-summaryMatrix <- matrix(NA, length(clades), 5)
-colnames(summaryMatrix) <- c('firstDate', 'lastDate', 'detectionLag', 'lineageCount', 'ids')
+summaryMatrix <- matrix(NA, length(clades), 6)
+colnames(summaryMatrix) <- c('size', 'firstDate', 'lastDate', 'detectionLag', 'lineageCount', 'ids')
 
 for(i in 1:length(clades)){
     dates <- as.numeric(gsub('.+_', '', clades[[i]]))
     detLag <- max(dates) - nodeDates[names(nodeDates) == get.mrca(tr, clades[[i]])]
-    # Get lineage count and ids
-    summaryMatrix[i, 1:3] <- c(gsub(' .+', '',
-                                    c(date_decimal(min(dates)), date_decimal(max(dates)))),
-                              detLag)
+                                        # Get lineage count and ids
+    lineages <- table(gsub('_.+', '', clades[[i]]))
+    lineages <- paste(names(lineages), lineages, sep = '=', collapse = ';')
+    ids <- paste(clades[[i]], collapse = ';')
+    summaryMatrix[i, ] <- c(length(clades[[i]]),
+        gsub(' .+', '', c(date_decimal(min(dates)), date_decimal(max(dates)))),
+        detLag, lineages, ids)
 }
 head(summaryMatrix)
+
+write.table(summaryMatrix, file = 'bangladeshImportationSummary.csv', sep = ',', row.names = F)
