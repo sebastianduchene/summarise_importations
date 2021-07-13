@@ -1,6 +1,16 @@
 library(NELSI)
 library(geiger)
 
+
+get_hindex <- function(x){
+#    x <- sample(1:10, size = 10, replace = T)
+    sorted <- sort(x, decreasing = T)
+    i <- 1:length(sorted)
+    hs <- sorted[which(sorted <= i)]
+    return(hs[1])
+}
+
+
 get.mrca <- function (phy, tip) 
 {
     if (!inherits(phy, "phylo")) 
